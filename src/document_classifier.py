@@ -10,8 +10,15 @@
         return "Tax invoice"
 
     if any(word in content for word in [
-        "boarding pass", "flight ticket", "e-ticket",
-        "airline ticket", "travel ticket"
+        "boarding pass",
+        "flight ticket",
+        "e-ticket",
+        "airline ticket",
+        "travel ticket",
+        "passenger ticket",
+        "baggage check",
+        "flight date",
+        "boarding"
     ]):
         return "Travel ticket"
 
@@ -28,7 +35,6 @@
 
     return "Not an expense document"
 
-
 def classify_category(document_type, text):
     """Assign one of the required expense categories."""
 
@@ -37,7 +43,6 @@ def classify_category(document_type, text):
 
     content = text.lower()
 
-    
     if any(word in content for word in [
         "hotel", "accommodation", "room charges",
         "lodging", "guest folio", "apartment",
@@ -47,6 +52,7 @@ def classify_category(document_type, text):
 
     if any(word in content for word in [
         "flight", "airline", "boarding pass",
+        "passenger ticket", "baggage check",
         "taxi", "cab", "metro", "train ticket",
         "travel ticket", "carpark", "parking"
     ]):

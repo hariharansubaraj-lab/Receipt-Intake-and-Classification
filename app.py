@@ -215,6 +215,19 @@ if "receipt_results" in st.session_state:
         for item in results
     ])
 
+    # Keep dates and amounts in consistent display/export formats.
+    # Convert dates to YYYY-MM-DD and leave missing dates blank.
+    result_df["Date"] = (
+        pd.to_datetime(result_df["Date"], errors="coerce")
+        .dt.strftime("%Y-%m-%d")
+        .fillna("")
+    )
+
+    # Display amounts with two decimal places; leave missing amounts blank.
+    result_df["Amount"] = pd.to_numeric(
+        result_df["Amount"], errors="coerce"
+    ).map(lambda value: f"{value:.2f}" if pd.notna(value) else "")
+
     def color_status(row):
         if row["Status"] == "Done":
             color = "#d8f3dc"

@@ -17,7 +17,7 @@ A Python-based application that accepts multiple PDF expense documents, extracts
 - Display confidence scores, category reasons, and extracted text.
 - Filter and review results in a Streamlit interface.
 - Download processed results as a CSV file.
-- Evaluate extracted fields against an expected-results CSV when the official test dataset is available.
+- Evaluate extracted fields against an expected-results CSV.
 
 ## Technology Stack
 
@@ -69,32 +69,74 @@ python -m streamlit run app.py
 
 Open the local URL displayed in the terminal. Upload one or more PDF documents, click **Process PDFs**, review the extracted results, and download the CSV report.
 
+## Project Structure
+
+```text
+Receipt_Intake_Classification/
+├── app.py
+├── evaluate.py
+├── expected_results.csv
+├── requirements.txt
+├── README.md
+├── sample_docs/
+├── test_pdfs/
+└── src/
+    ├── __init__.py
+    ├── document_classifier.py
+    ├── field_extractor.py
+    ├── ocr_processor.py
+    ├── pdf_reader.py
+    └── validator.py
+```
+
+`test_pdfs/` contains the local test PDFs used by `evaluate.py`. `sample_docs/` can be used for additional sample documents.
+
+## Design and Processing Workflow
+
+The application separates PDF reading, document classification, field extraction, and validation into individual modules.
+
+1. **PDF upload:** Streamlit accepts one or more PDF files.
+2. **PDF reading:** `src/pdf_reader.py` extracts embedded text from digital PDFs and uses the OCR path when needed for scanned documents.
+3. **OCR:** `src/ocr_processor.py` supports text recognition from scanned PDF pages/images through Tesseract OCR.
+4. **Document classification:** `src/document_classifier.py` identifies the document type using rule-based keyword matching.
+5. **Category classification:** The same module assigns an expense category based on document clues and keywords.
+6. **Field extraction:** `src/field_extractor.py` extracts the vendor, date, amount, currency, and receipt/invoice number.
+7. **Validation:** `src/validator.py` checks extracted fields and determines whether the document is complete, needs review, is unsupported, or has failed.
+8. **Results and export:** `app.py` displays processing results, filters, document details, extracted text, and CSV export.
+
+Each PDF is processed independently so that an error in one uploaded file does not prevent other uploaded files from being processed.
+
 ## Evaluation
 
-The evaluation script compares extracted fields against an expected-results CSV.
+The `evaluate.py` script compares five fields from each test PDF with the matching row in `expected_results.csv`:
 
-1. Place the assessment's official sample PDFs in `sample_docs`.
-2. Place the official `expected_results.csv` in the project root.
-3. Run:
+- Document Type
+- Category
+- Vendor
+- Date
+- Amount
+
+The script reads PDFs from the `test_pdfs/` folder and expected values from `expected_results.csv` in the project root.
+
+Run the evaluation from the project root:
 
 ```powershell
 python evaluate.py
 ```
 
-The script cannot calculate official evaluation accuracy until the expected-results CSV and corresponding PDF samples are available.
+### Current Local Evaluation Results
 
-## Design
+The latest reported local test run evaluated 12 PDFs and returned:
 
-The application separates PDF reading, document classification, field extraction, and validation into individual modules.
+| Field | Correct | Field accuracy |
+|---|---:|---:|
+| Document Type | 12/12 | 100% |
+| Category | 12/12 | 100% |
+| Vendor | 12/12 | 100% |
+| Date | 12/12 | 100% |
+| Amount | 12/12 | 100% |
 
-1. **PDF reading:** Extract embedded text from digital PDFs. If embedded text is unavailable, use Tesseract OCR to process scanned documents.
-2. **Document classification:** Identify the document type using document text and rule-based matching.
-3. **Category classification:** Assign an expense category based on document clues and keywords.
-4. **Field extraction:** Extract the vendor, date, total amount, currency, and receipt or invoice number.
-5. **Validation:** Check required fields and determine whether the document is complete, needs review, is unsupported, or has failed.
-6. **User interface:** Use Streamlit to display processing results, filters, document details, and CSV export.
-
-Each PDF is processed independently so that an error in one document does not prevent other uploaded files from being processed.
+The evaluation reported no mismatches for these 12 test PDFs. These results apply only to the included local test dataset and do not guarantee the same accuracy on unseen or real-world documents.
 
 ## Confidence Score
 
@@ -115,4 +157,11 @@ It is not a calibrated machine-learning probability and does not guarantee that 
 4. **Rule-based extraction:** Unfamiliar document layouts or unusual field labels may not be handled correctly.
 5. **Category classification:** Documents containing overlapping keywords may be assigned an incorrect category.
 6. **Confidence score:** The score measures required-field completeness, not actual extraction accuracy.
-7. **Evaluation dataset:** Official accuracy cannot be reported until the official expected-results CSV and matching PDF samples are available.
+7. **Test coverage:** The reported evaluation measures performance on the included 12-document test set only. More diverse real-world documents are needed to assess generalization.
+
+## Future Improvements
+
+- Add more diverse real-world test documents and expand evaluation coverage.
+- Improve handling of overlapping keywords and unfamiliar document layouts.
+- Add more robust checks for ambiguous dates, currencies, and extracted totals.
+- Track additional evaluation metrics for classification and field extraction.

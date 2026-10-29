@@ -6,8 +6,9 @@ from src.pdf_reader import read_pdf
 from src.document_classifier import classify_document, classify_category
 from src.field_extractor import extract_fields
 
+
 BASE_DIR = Path(__file__).resolve().parent
-SAMPLE_DIR = BASE_DIR / "sample_docs"
+SAMPLE_DIR = BASE_DIR / "test_pdfs"
 EXPECTED_FILE = BASE_DIR / "expected_results.csv"
 
 FIELDS = {
@@ -22,16 +23,21 @@ FIELDS = {
 def normalize(value):
     if pd.isna(value):
         return ""
+
     value = str(value).strip()
+
     if value.lower() in {"nan", "none"}:
         return ""
+
     return value
 
 
 def normalize_amount(value):
     value = normalize(value).replace(",", "")
+
     if not value:
         return ""
+
     try:
         return f"{float(value):.2f}"
     except ValueError:
@@ -42,21 +48,26 @@ def evaluate():
     if not EXPECTED_FILE.exists():
         print("ERROR: expected_results.csv not found.")
         print(f"Expected location: {EXPECTED_FILE}")
-        print("Place the official assessment CSV in the project root.")
         return
 
     if not SAMPLE_DIR.exists():
-        print(f"ERROR: Sample PDF folder not found: {SAMPLE_DIR}")
+        print(f"ERROR: PDF folder not found: {SAMPLE_DIR}")
         return
 
     expected_df = pd.read_csv(EXPECTED_FILE).fillna("")
+
     available_files = {
-        path.name: path for path in SAMPLE_DIR.glob("*.pdf")
+        path.name: path
+        for path in SAMPLE_DIR.glob("*.pdf")
     }
 
     filename_column = next(
-        (col for col in expected_df.columns
-         if col.strip().lower() in {"filename", "file name", "pdf"}),
+        (
+            col
+            for col in expected_df.columns
+            if col.strip().lower()
+            in {"filename", "file name", "pdf"}
+        ),
         None,
     )
 
@@ -66,20 +77,27 @@ def evaluate():
         return
 
     column_map = {}
+
     for key, expected_name in FIELDS.items():
         matching = next(
-            (col for col in expected_df.columns
-             if col.strip().lower() == expected_name.lower()),
+            (
+                col
+                for col in expected_df.columns
+                if col.strip().lower() == expected_name.lower()
+            ),
             None,
         )
+
         if matching is None:
             print(f"ERROR: Missing expected column: {expected_name}")
             return
+
         column_map[key] = matching
 
     comparisons = {key: [] for key in FIELDS}
     mismatches = []
     missing_pdfs = []
+    matched_count = 0
 
     for _, row in expected_df.iterrows():
         filename = normalize(row[filename_column])
@@ -89,12 +107,28 @@ def evaluate():
             missing_pdfs.append(filename)
             continue
 
+        matched_count += 1
+
         try:
             result = read_pdf(str(pdf_path))
-            text = result.get("text", "")
+
+            if result.get("error"):
+                raise ValueError(result["error"])
+
+            text = result.get("text", "").strip()
+
             document_type = classify_document(text)
             category = classify_category(document_type, text)
-            extracted = extract_fields(text)
+
+            # Unsupported documents must have blank expense fields.
+            if document_type == "Not an expense document":
+                extracted = {
+                    "vendor": "",
+                    "date": "",
+                    "amount": "",
+                }
+            else:
+                extracted = extract_fields(text)
 
             actual = {
                 "document_type": document_type,
@@ -112,7 +146,11 @@ def evaluate():
                     expected_value = normalize_amount(expected_value)
                     actual_value = normalize_amount(actual_value)
 
-                correct = expected_value.casefold() == actual_value.casefold()
+                correct = (
+                    expected_value.casefold()
+                    == actual_value.casefold()
+                )
+
                 comparisons[key].append(correct)
 
                 if not correct:
@@ -125,8 +163,10 @@ def evaluate():
 
         except Exception as exc:
             print(f"ERROR processing {filename}: {exc}")
+
             for key in FIELDS:
                 comparisons[key].append(False)
+
                 mismatches.append({
                     "filename": filename,
                     "field": FIELDS[key],
@@ -136,24 +176,32 @@ def evaluate():
 
     print("\n=== RECEIPT CLASSIFICATION EVALUATION ===")
     print(f"Expected documents: {len(expected_df)}")
-    print(f"Successfully matched to PDFs: "
-          f"{len(expected_df) - len(missing_pdfs) - 0}")
+    print(f"Successfully matched to PDFs: {matched_count}")
 
     if missing_pdfs:
         print("\nMissing PDF files:")
+
         for filename in missing_pdfs:
             print(f"  - {filename}")
 
     print("\nField accuracy:")
+
     for key, label in FIELDS.items():
         values = comparisons[key]
+
         if values:
-            accuracy = sum(values) / len(values) * 100
-            print(f"{label}: {accuracy:.2f}% ({sum(values)}/{len(values)})")
+            correct_count = sum(values)
+            accuracy = correct_count / len(values) * 100
+
+            print(
+                f"{label}: {accuracy:.2f}% "
+                f"({correct_count}/{len(values)})"
+            )
         else:
             print(f"{label}: N/A (no PDFs evaluated)")
 
     print("\nMismatches:")
+
     if mismatches:
         for item in mismatches:
             print(

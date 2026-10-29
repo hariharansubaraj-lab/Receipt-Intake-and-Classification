@@ -1,0 +1,13 @@
+Filename,Document Type,Category,Vendor,Date,Amount
+01_restaurant_receipt.pdf,Receipt,Food & Beverage,DEMO CAFE,2026-10-15,25.50
+02_flight_ticket.pdf,Travel ticket,Travel,DEMO AIRWAYS,2026-10-16,250.00
+03_hotel_folio.pdf,Hotel folio,Accommodation,DEMO HOTEL,2026-10-17,180.00
+04_office_invoice.pdf,Tax invoice,Office Supplies,DEMO OFFICE SUPPLIES,2026-10-18,75.00
+05_missing_amount.pdf,Receipt,Food & Beverage,DEMO CAFE,2026-10-19,
+06_usd_receipt.pdf,Receipt,Food & Beverage,DEMO COFFEE SHOP,2026-10-20,18.50
+07_train_ticket.pdf,Travel ticket,Travel,DEMO RAILWAYS,2026-10-21,1250.00
+08_hotel_cad.pdf,Hotel folio,Accommodation,DEMO CANADA HOTEL,2026-10-22,320.00
+09_tax_invoice.pdf,Tax invoice,Office Supplies,DEMO TECHNOLOGY STORE,2026-10-23,13715.52
+10_non_expense.pdf,Not an expense document,,,, 
+11_missing_date.pdf,Receipt,Office Supplies,DEMO OFFICE MART,,450.00
+12_ambiguous_dollar.pdf,Hotel folio,Accommodation,DEMO HOTEL,2026-10-25,780.75
